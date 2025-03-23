@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Анализ эмоций</title>
+    <style>
+        /* Общие стили для страницы */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ecf0f3;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+        
+        /* Основной блок */
+        .container {
+            width: 100%;
+            max-width: 900px;
+            padding: 30px;
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: #3498db;
+        }
+
+        /* Текстовое поле для ввода */
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 20px;
+            border-radius: 20px;
+            border: 1px solid #ccc;
+            font-size: 18px;
+            margin-bottom: 20px;
+            background-color: #ecf0f3;
+            color: #333;
+        }
+
+        /* Контейнер для кнопок */
+        .button-container {
+            display: flex;
+            flex-direction: column; /* Размещение кнопок в столбик */
+            align-items: center; /* Выравнивание кнопок по центру */
+            margin-top: 20px; /* Отступ сверху */
+        }
+
+        /* Основные стили кнопок остаются прежними */
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 20px;
+            margin: 10px 0; /* Отступ только по вертикали */
+            border: none;
+            background-color: #3498db;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        /* Стили для результата */
+        .result {
+            margin-top: 30px;
+            font-size: 18px;
+            font-weight: bold;
+            width: 100%;
+            text-align: center;
+        }
+
+        .emotion {
+            margin: 5px 0;
+        }
+
+        /* Выпадающий список */
+        select {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 12px;
+            border: 1px solid #ccc;
+            background-color: #ecf0f3;
+            margin-bottom: 20px;
+        }
+        
+        /* Стили для графиков */
+        .emotion-bar {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        .emotion-bar div {
+            width: 30px;
+            height: 100px;
+            margin: 0 5px;
+            background-color: #3498db;
+            border-radius: 5px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Анализ эмоций-1</h1>
+        
+        <textarea id="textInput" placeholder="Введите текст для анализа эмоций..."></textarea>
+        
+        <div class="button-container">
+            <button id="analyzeButton">Анализировать</button>
+            <button onclick="pasteText()">Вставить</button>
+            <button id="clearButton">Очистить</button>
+        </div>
+
+        <div id="result" class="result"></div>
+        
+        <div id="emotionResult" class="emotion-bar"></div>
+    </div>
+
+    <script>
+        const emotionKeywords = {
+            'Злость': [
+                'злился', 'гнев', 'ярость', 'раздражение', 'агрессия', 'ненависть', 'сердитый', 'яростный', 'злость',
+                'взбешен', 'агрессивный', 'отвращение', 'раздражен', 'восхищение', 'конфликт', 'ссора', 'неудовлетворение',
+                'презрение', 'порицание', 'беситься', 'буря', 'восстание', 'гневливый', 'драка', 'деструкция', 'нападение',
+                'осуждение', 'враждебность', 'злобный', 'раскол', 'обида', 'скандал', 'раздор', 'злословие',
+                'злые намерения', 'враждебно настроенный', 'безжалостный', 'злорадство', 'порой злой', 'сварливый', 'разбушевавшийся',
+                'позор', 'гневающийся', 'усталость от раздражения', 'оппозиция', 'неприятие'
+            ],
+            'Страх': [
+                'страх', 'испуг', 'дрожь', 'паника', 'опасность', 'тревога', 'паникующий', 'осторожность', 'нервничать',
+                'пугаться', 'инстинкт', 'угроза', 'боязнь', 'жуть', 'ужас', 'психоз', 'панический', 'беспокойство', 'тревожность',
+                'жизненная угроза', 'ошеломление', 'бледность', 'волнение', 'паникующий', 'страшный', 'мучение', 'боязливый',
+                'похолодеть от страха', 'страшно', 'паранойя', 'паника', 'революция страха', 'исступление', 'гипервозбудимость',
+                'несчастье', 'инстинкт выживания', 'психологический стресс', 'нападение страха', 'дикое беспокойство', 'судорожный',
+                'отчаяние', 'пугаться', 'трусость', 'паникующий момент', 'гиперреакция'
+            ],
+            'Радость': [
+                'радость', 'счастье', 'восторг', 'наслаждение', 'довольный', 'веселье', 'удовлетворение', 'улыбка', 'позитивный',
+                'праздник', 'блаженство', 'смеяться', 'восторженный', 'успех', 'задор', 'обожание', 'праздничный', 'радостный',
+                'триумф', 'легкость', 'чудо', 'вдохновение', 'обожание', 'восхищение', 'праздничность', 'светлый', 'приятный',
+                'счастливый', 'удовольствие', 'радоваться', 'забава', 'радушие', 'радоваться каждому моменту', 'обрадованный',
+                'восторженно улыбающийся', 'отличное настроение', 'состояние счастья', 'завораживающий', 'смеющийся', 'покой',
+                'светлый день', 'греющий душу', 'восторгаться', 'вдохновленный', 'на крыльях счастья', 'очарование', 'позитивная энергия'
+            ],
+            'Грусть': [
+                'грусть', 'печаль', 'тоска', 'разочарование', 'слёзы', 'плач', 'усталость', 'депрессия', 'неудовлетворенность',
+                'потеря', 'печальный', 'тоскующий', 'хандра', 'грустный', 'разбитый', 'грустить', 'потерянность', 'боль',
+                'безысходность', 'погружение в себя', 'печальный взгляд', 'туманное настроение', 'душевная боль', 'отчаяние',
+                'душевное опустошение', 'поглощение тоски', 'тяжелый день', 'сентиментальность', 'забытое счастье', 'грустное молчание',
+                'опустошение', 'скорбь', 'сожаление', 'смертельная тишина', 'покинутость', 'угрюмость', 'разрушенная мечта',
+                'поглощение грусти', 'пустота', 'горечь', 'собственное одиночество', 'слёзы на глазах', 'грустный момент',
+                'запоздалое сожаление', 'выгорание'
+            ],
+            'Удивление': [
+                'удивление', 'шок', 'внезапно', 'неожиданно', 'ахнул', 'потрясение', 'шокированный', 'невероятно', 'удивлять',
+                'ошарашенный', 'изумление', 'удивительный', 'великолепие', 'открытие', 'потрясающий', 'непредсказуемо', 'поразительно',
+                'необычно', 'открывать', 'шокировать', 'восхищение', 'сюрприз', 'невероятный', 'удивительный момент', 'поражать',
+                'изумительный', 'головокружительный', 'невероятное открытие', 'восторг', 'потрясающий эффект', 'беспокойство',
+                'неожиданное счастье', 'невероятный поворот', 'освежающий сюрприз', 'восхищение', 'сверхъестественно',
+                'изумить', 'вдохновляющий', 'трансцендентный', 'необыкновенное', 'поражать воображение', 'невероятная встреча',
+                'страшное открытие'
+            ]
+        };
+
+        function analyzeEmotions() {
+            const text = document.getElementById('textInput').value.toLowerCase();
+            let emotions = { 'Злость': 0, 'Страх': 0, 'Радость': 0, 'Грусть': 0, 'Удивление': 0 };
+
+            for (const [emotion, keywords] of Object.entries(emotionKeywords)) {
+                keywords.forEach(keyword => {
+                    emotions[emotion] += (text.split(keyword).length - 1);
+                });
+            }
+
+            displayEmotions(emotions);
+        }
+
+        function displayEmotions(emotions) {
+            let resultText = `<b>Распределение эмоций:</b><br>`;
+            const emotionResultDiv = document.getElementById('emotionResult');
+            emotionResultDiv.innerHTML = '';
+
+            for (const [emotion, count] of Object.entries(emotions)) {
+                resultText += `${emotion}: ${count} раз(а)<br>`;
+
+                const bar = document.createElement('div');
+                bar.style.height = `${count * 20}px`;
+                bar.style.backgroundColor = getColorForEmotion(emotion);
+                emotionResultDiv.appendChild(bar);
+            }
+
+            document.getElementById('result').innerHTML = resultText;
+        }
+
+        function getColorForEmotion(emotion) {
+            const colors = {
+                'Злость': '#ff4d4d',
+                'Страх': '#6666ff',
+                'Радость': '#66ff66',
+                'Грусть': '#9999ff',
+                'Удивление': '#ffff66',
+            };
+            return colors[emotion] || '#cccccc';
+        }
+
+        function pasteText() {
+            navigator.clipboard.readText().then(text => {
+                document.getElementById('textInput').value = text;
+            });
+        }
+
+        function clearText() {
+            document.getElementById('textInput').value = '';
+            document.getElementById('result').innerHTML = '';
+            document.getElementById('emotionResult').innerHTML = '';
+        }
+
+        // Привязка кнопок к обработчикам событий
+        document.getElementById('analyzeButton').addEventListener('click', analyzeEmotions);
+        document.getElementById('clearButton').addEventListener('click', clearText);
+    </script>
+
+</body>
+</html>
